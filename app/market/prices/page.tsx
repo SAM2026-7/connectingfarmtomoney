@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_PRICES, COMMODITIES, NIGERIAN_STATES } from "@/lib/data";
+import { COMMODITIES, NIGERIAN_STATES } from "@/lib/data";
 import { formatPrice, formatDate } from "@/lib/data";
+import { PriceData } from "@/lib/types";
 
 export default function MarketPrices() {
   const [selectedCommodity, setSelectedCommodity] = useState("");
   const [selectedState, setSelectedState] = useState("");
+  const [prices, setPrices] = useState<PriceData[]>([]);
+  useEffect(() => { fetch("/api/prices").then(response => response.ok ? response.json() : null).then(data => setPrices(data?.data ?? [])).catch(() => setPrices([])); }, []);
 
-  const filtered = MOCK_PRICES.filter(p => {
+  const filtered = prices.filter(p => {
     const matchesCommodity = !selectedCommodity || p.commodityId === selectedCommodity;
     const matchesState = !selectedState || p.state === selectedState;
     return matchesCommodity && matchesState;

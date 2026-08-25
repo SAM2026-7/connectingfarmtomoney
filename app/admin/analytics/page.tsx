@@ -1,27 +1,54 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_PRODUCE, MOCK_ORDERS, MOCK_FARMERS, MOCK_AGENTS, MOCK_BUYERS, MOCK_EXPORTERS } from "@/lib/data";
+import { Order, ProduceListing, User, VisitorRecord } from "@/lib/types";
 
 export default function EnhancedAdmin() {
-  const totalVolume = MOCK_PRODUCE.reduce((sum, p) => sum + p.quantity, 0);
-  const totalValue = MOCK_ORDERS.reduce((sum, o) => sum + o.price, 0);
+  const [users, setUsers] = useState<User[]>([]);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
+  const [visitorsError, setVisitorsError] = useState(false);
+  useEffect(() => {
+    fetch("/api/admin/summary")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        setUsers(data?.data?.users ?? []);
+        setProduce(data?.data?.produce ?? []);
+        setOrders(data?.data?.orders ?? []);
+      })
+      .catch(() => { setUsers([]); setProduce([]); setOrders([]); });
+    fetch("/api/admin/visitors")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data?.data) {
+          setVisitors(data.data);
+        } else {
+          setVisitorsError(true);
+        }
+      })
+      .catch(() => { setVisitorsError(true); });
+  }, []);
+  const totalVolume = produce.reduce((sum, item) => sum + item.quantity, 0);
+  const totalValue = orders.reduce((sum, order) => sum + order.price, 0);
+  const roleUsers = (role: User["role"]) => users.filter(user => user.role === role);
 
   return (
     <DashboardLayout title="Admin Analytics" subtitle="Platform-wide insights and management">
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-label">Total Users</div>
-          <div className="stat-value">{MOCK_FARMERS.length + MOCK_AGENTS.length + MOCK_BUYERS.length + MOCK_EXPORTERS.length}</div>
+          <div className="stat-value">{users.length}</div>
           <div className="stat-change positive">+12 this week</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Active Listings</div>
-          <div className="stat-value">{MOCK_PRODUCE.filter(p => p.status === "active").length}</div>
+          <div className="stat-value">{produce.filter(item => item.status === "active").length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Total Orders</div>
-          <div className="stat-value">{MOCK_ORDERS.length}</div>
+          <div className="stat-value">{orders.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Platform Revenue</div>
@@ -56,30 +83,30 @@ export default function EnhancedAdmin() {
         <tbody>
           <tr>
             <td className="commodity-name">Farmers</td>
-            <td>{MOCK_FARMERS.length}</td>
-            <td>{MOCK_FARMERS.filter(f => f.verificationLevel !== "unverified").length}</td>
-            <td>{(MOCK_FARMERS.reduce((s, f) => s + (f.rating || 0), 0) / MOCK_FARMERS.length).toFixed(1)}</td>
+            <td>{roleUsers("farmer").length}</td>
+            <td>{roleUsers("farmer").filter(user => user.verificationLevel !== "unverified").length}</td>
+            <td>{(roleUsers("farmer").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(roleUsers("farmer").length, 1)).toFixed(1)}</td>
             <td><span className="badge badge-green">Active</span></td>
           </tr>
           <tr>
             <td className="commodity-name">Agents</td>
-            <td>{MOCK_AGENTS.length}</td>
-            <td>{MOCK_AGENTS.filter(a => a.verificationLevel !== "unverified").length}</td>
-            <td>{(MOCK_AGENTS.reduce((s, a) => s + (a.rating || 0), 0) / MOCK_AGENTS.length).toFixed(1)}</td>
+            <td>{roleUsers("agent").length}</td>
+            <td>{roleUsers("agent").filter(user => user.verificationLevel !== "unverified").length}</td>
+            <td>{(roleUsers("agent").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(roleUsers("agent").length, 1)).toFixed(1)}</td>
             <td><span className="badge badge-green">Active</span></td>
           </tr>
           <tr>
             <td className="commodity-name">Buyers</td>
-            <td>{MOCK_BUYERS.length}</td>
-            <td>{MOCK_BUYERS.filter(b => b.verificationLevel !== "unverified").length}</td>
-            <td>{(MOCK_BUYERS.reduce((s, b) => s + (b.rating || 0), 0) / MOCK_BUYERS.length).toFixed(1)}</td>
+            <td>{roleUsers("buyer").length}</td>
+            <td>{roleUsers("buyer").filter(user => user.verificationLevel !== "unverified").length}</td>
+            <td>{(roleUsers("buyer").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(roleUsers("buyer").length, 1)).toFixed(1)}</td>
             <td><span className="badge badge-green">Active</span></td>
           </tr>
           <tr>
             <td className="commodity-name">Exporters</td>
-            <td>{MOCK_EXPORTERS.length}</td>
-            <td>{MOCK_EXPORTERS.filter(e => e.verificationLevel !== "unverified").length}</td>
-            <td>{(MOCK_EXPORTERS.reduce((s, e) => s + (e.rating || 0), 0) / MOCK_EXPORTERS.length).toFixed(1)}</td>
+            <td>{roleUsers("exporter").length}</td>
+            <td>{roleUsers("exporter").filter(user => user.verificationLevel !== "unverified").length}</td>
+            <td>{(roleUsers("exporter").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(roleUsers("exporter").length, 1)).toFixed(1)}</td>
             <td><span className="badge badge-green">Active</span></td>
           </tr>
         </tbody>
@@ -151,6 +178,66 @@ export default function EnhancedAdmin() {
           </tr>
         </tbody>
       </table>
+
+      <div className="section-heading" style={{ marginTop: "50px" }}>
+        <div>
+          <span className="section-kicker">VISITOR LOGINS</span>
+          <h2>Visitor Records</h2>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "#708077" }}>{visitors.length} recorded</span>
+          <a
+            href="/api/admin/visitors?format=csv"
+            className="outline-button"
+            style={{ borderBottom: "none" }}
+            onClick={(e) => {
+              if (visitorsError) {
+                e.preventDefault();
+              }
+            }}
+            aria-disabled={visitorsError}
+          >
+            <span>↓</span> Export CSV
+          </a>
+        </div>
+      </div>
+
+      {visitorsError ? (
+        <div className="empty-state">
+          <strong>Unable to load visitor records</strong>
+          <span>Make sure you are logged in as an admin (manufacturer).</span>
+        </div>
+      ) : visitors.length === 0 ? (
+        <div className="empty-state">
+          <strong>No visitor records yet</strong>
+          <span>Visitors who record a login on the front page will appear here.</span>
+        </div>
+      ) : (
+        <table className="produce-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Class</th>
+              <th>Date of Visit</th>
+              <th>Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visitors.map((v) => (
+              <tr key={v.id}>
+                <td className="commodity-name">{v.name}</td>
+                <td>{v.email}</td>
+                <td>{v.phone}</td>
+                <td>{v.role}</td>
+                <td>{v.visitDate}</td>
+                <td style={{ color: "#708077", fontSize: "12px" }}>{v.createdAt}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </DashboardLayout>
   );
 }

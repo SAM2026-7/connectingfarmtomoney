@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_PRODUCE } from "@/lib/data";
 import { formatDate, getCommodityName } from "@/lib/data";
-
-const MOCK_MOISTURE = ["8.2", "11.5", "9.8", "7.4", "10.1"];
+import { ProduceListing } from "@/lib/types";
 
 export default function Quality() {
   const [inspection, setInspection] = useState({ produceId: "", moisture: "", condition: "", notes: "" });
+  const [feedback, setFeedback] = useState("");
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [reports, setReports] = useState<ProduceListing[]>([]);
+  useEffect(() => { fetch("/api/produce").then(response => response.ok ? response.json() : null).then(data => setProduce(data?.data ?? [])).catch(() => setProduce([])); }, []);
+
+  const submitInspection = () => {
+    const moisture = Number(inspection.moisture);
+    if (!inspection.produceId || !Number.isFinite(moisture) || moisture < 0 || moisture > 100 || !inspection.condition) {
+      setFeedback("Produce, moisture level, and physical condition are required.");
+      return;
+    }
+    const selected = produce.find(item => item.id === inspection.produceId);
+    if (selected) setReports(current => [selected, ...current]);
+    setFeedback("Inspection submitted successfully.");
+    setInspection({ produceId: "", moisture: "", condition: "", notes: "" });
+  };
 
   return (
     <DashboardLayout title="Quality Assurance" subtitle="Inspect and grade produce quality">
@@ -45,7 +59,7 @@ export default function Quality() {
             <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#708077", marginBottom: "6px" }}>Produce</label>
             <select value={inspection.produceId} onChange={e => setInspection({ ...inspection, produceId: e.target.value })} style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px" }}>
               <option value="">Select produce</option>
-              {MOCK_PRODUCE.map(p => <option key={p.id} value={p.id}>{getCommodityName(p.commodityId)} - {p.variety}</option>)}
+              {produce.map(p => <option key={p.id} value={p.id}>{getCommodityName(p.commodityId)} - {p.variety}</option>)}
             </select>
           </div>
           <div>
@@ -77,9 +91,10 @@ export default function Quality() {
           <textarea value={inspection.notes} onChange={e => setInspection({ ...inspection, notes: e.target.value })} rows={3} placeholder="Inspection notes..." style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px", resize: "vertical" }} />
         </div>
         <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-          <button className="btn btn-primary">Submit Inspection</button>
+          <button className="btn btn-primary" onClick={submitInspection}>Submit Inspection</button>
           <button className="btn btn-outline" onClick={() => setInspection({ produceId: "", moisture: "", condition: "", notes: "" })}>Reset</button>
         </div>
+        {feedback && <p role="status" style={{ margin: "14px 0 0", color: feedback.includes("successfully") ? "var(--royal-green)" : "#a33a2a", fontSize: "13px" }}>{feedback}</p>}
       </div>
 
       <div className="section-heading">
@@ -100,10 +115,10 @@ export default function Quality() {
           </tr>
         </thead>
         <tbody>
-          {MOCK_PRODUCE.slice(0, 5).map((p, i) => (
+          {[...reports, ...produce.filter(item => !reports.some(report => report.id === item.id)).slice(0, 5)].map((p, i) => (
             <tr key={p.id}>
               <td className="commodity-name">{getCommodityName(p.commodityId)}</td>
-              <td>{MOCK_MOISTURE[i] || "9.0"}%</td>
+              <td>{i < reports.length ? "Recorded" : "Pending"}</td>
               <td>Good</td>
               <td><span className={`grade ${p.grade.toLowerCase()}`}>{p.grade}</span></td>
               <td>Field Inspector</td>

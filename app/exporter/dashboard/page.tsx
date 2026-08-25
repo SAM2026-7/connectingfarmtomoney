@@ -1,19 +1,33 @@
 "use client";
 
 import { useAuth } from "@/components/AuthProvider";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
-import { MOCK_PRODUCE, MOCK_ORDERS } from "@/lib/data";
 import { formatPrice, getCommodityName } from "@/lib/data";
+import { ProduceListing, Order } from "@/lib/types";
 
 export default function ExporterDashboard() {
   const { user } = useAuth();
-  const myProduce = MOCK_PRODUCE.filter(p => p.sellerId === user?.id);
-  const myOrders = MOCK_ORDERS.filter(o => o.sellerId === user?.id);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([fetch("/api/produce"), fetch("/api/orders")])
+      .then(async ([produceResponse, orderResponse]) => {
+        const produceData = produceResponse.ok ? await produceResponse.json() : { data: [] };
+        const orderData = orderResponse.ok ? await orderResponse.json() : { data: [] };
+        setProduce(produceData.data ?? []);
+        setOrders(orderData.data ?? []);
+      })
+      .catch(() => { setProduce([]); setOrders([]); });
+  }, [user]);
+  const myProduce = produce.filter(p => p.sellerId === user?.id);
+  const myOrders = orders.filter(o => o.sellerId === user?.id);
   const exportReady = myProduce.filter(p => p.grade === "export").length;
 
   return (
-    <div className="dashboard-wrap">
+    <div className="dashboard-wrap exporter-dashboard">
       <Sidebar />
       <div className="dashboard-content">
         <header className="topbar">
@@ -26,6 +40,19 @@ export default function ExporterDashboard() {
         <div className="content-wrap">
           <h1 className="page-title">Exporter Dashboard</h1>
           <p className="page-subtitle">Manage export orders and documentation.</p>
+
+          <div className="exporter-hero">
+            <img
+              src="https://images.unsplash.com/photo-1595854775527-69a8a4470e2c?auto=format&fit=crop&w=1400&q=85"
+              alt="Farmer in a corn field"
+              onError={event => { event.currentTarget.style.display = "none"; }}
+            />
+            <div className="exporter-hero-overlay" />
+            <div className="exporter-hero-copy">
+              <span>EXPORT SUPPLY NETWORK</span>
+              <strong>Move quality produce<br />from farm to global markets.</strong>
+            </div>
+          </div>
 
           <div className="stats-grid">
             <div className="stat-card">

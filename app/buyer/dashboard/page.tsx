@@ -1,14 +1,23 @@
 "use client";
 
 import { useAuth } from "@/components/AuthProvider";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
-import { MOCK_PRODUCE, MOCK_ORDERS } from "@/lib/data";
+import { ProduceListing, Order } from "@/lib/types";
 import { formatPrice, formatDate, getCommodityName } from "@/lib/data";
 
 export default function BuyerDashboard() {
   const { user } = useAuth();
-  const myOrders = MOCK_ORDERS.filter(o => o.buyerId === user?.id);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [myOrders, setMyOrders] = useState<Order[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/catalog").then(response => response.ok ? response.json() : null).then(data => {
+      setProduce(data?.data?.produce ?? []);
+      setMyOrders((data?.data?.orders ?? []).filter((order: Order) => order.buyerId === user.id));
+    }).catch(() => { setProduce([]); setMyOrders([]); });
+  }, [user]);
   const totalSpent = myOrders.filter(o => o.status === "completed" || o.status === "delivered").reduce((sum, o) => sum + o.price, 0);
   const activeOrders = myOrders.filter(o => !["completed", "cancelled", "delivered"].includes(o.status)).length;
 
@@ -67,7 +76,7 @@ export default function BuyerDashboard() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_PRODUCE.slice(0, 6).map(p => (
+              {produce.filter(p => p.status === "active").slice(0, 6).map(p => (
                 <tr key={p.id}>
                   <td className="commodity-name">{getCommodityName(p.commodityId)} <span style={{ color: "#708077", fontWeight: 400 }}>{p.variety}</span></td>
                   <td>{(p.sellerRole === "farmer" ? "Farmer" : p.sellerRole === "agent" ? "Agent" : "Exporter")}</td>
@@ -102,7 +111,7 @@ export default function BuyerDashboard() {
               {myOrders.slice(0, 5).map(o => (
                 <tr key={o.id}>
                   <td className="commodity-name">{o.id}</td>
-                  <td>{getCommodityName(MOCK_PRODUCE.find(p => p.id === o.produceId)?.commodityId || "")}</td>
+                  <td>{getCommodityName(produce.find(p => p.id === o.produceId)?.commodityId || "")}</td>
                   <td>{o.quantity.toLocaleString()}</td>
                   <td>{formatPrice(o.price)}</td>
                   <td><span className={`badge ${o.status === "completed" || o.status === "delivered" ? "badge-green" : o.status === "cancelled" ? "badge-red" : "badge-yellow"}`}>{o.status.replace("_", " ")}</span></td>

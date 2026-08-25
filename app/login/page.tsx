@@ -17,11 +17,10 @@ export default function Login() {
     { role: "exporter", title: "Exporter", desc: "Find export-quality commodities" },
   ];
 
-  const handleLogin = () => {
-    if (selectedRole) {
-      login(selectedRole as UserRole);
-      router.push(`/${selectedRole}/dashboard`);
-    }
+  const handleLogin = async () => {
+    if (!selectedRole) return;
+    await login(selectedRole as UserRole);
+    router.push(`/${selectedRole}/dashboard`);
   };
 
   return (

@@ -1,21 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_PRODUCE, NIGERIAN_STATES, COMMODITIES } from "@/lib/data";
+import { NIGERIAN_STATES, COMMODITIES } from "@/lib/data";
+import { ProduceListing } from "@/lib/types";
 import { formatPrice, getCommodityName } from "@/lib/data";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function BuyerSearch() {
   const [search, setSearch] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [selectedCommodity, setSelectedCommodity] = useState("");
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const { user } = useAuth();
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [requestForm, setRequestForm] = useState({ quantity: "", deliveryLocation: "" });
+  const [feedback, setFeedback] = useState("");
+  const [requesting, setRequesting] = useState(false);
 
-  const filtered = MOCK_PRODUCE.filter(p => {
+  useEffect(() => {
+    fetch("/api/produce")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => setProduce(data?.data ?? []))
+      .catch(() => setProduce([]));
+  }, []);
+
+  const filtered = produce.filter(p => {
     const matchesSearch = !search || getCommodityName(p.commodityId).toLowerCase().includes(search.toLowerCase()) || p.location.toLowerCase().includes(search.toLowerCase());
     const matchesState = !selectedState || p.state === selectedState;
     const matchesCommodity = !selectedCommodity || p.commodityId === selectedCommodity;
     return matchesSearch && matchesState && matchesCommodity && p.status === "active";
   });
+
+  const handleRequest = async (listing: ProduceListing) => {
+    setFeedback("");
+    setRequesting(true);
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ produceId: listing.id, buyerId: user?.id, sellerId: listing.sellerId, quantity: Number(requestForm.quantity), price: listing.price, deliveryLocation: requestForm.deliveryLocation }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to place request.");
+      setFeedback("Order request sent successfully.");
+      setRequestId(null);
+      setRequestForm({ quantity: "", deliveryLocation: "" });
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Unable to place request.");
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   return (
     <DashboardLayout title="Find Produce" subtitle="Search available produce from verified sellers">
@@ -36,6 +72,7 @@ export default function BuyerSearch() {
           {NIGERIAN_STATES.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
         </select>
       </div>
+      {feedback && <p role="status" style={{ color: feedback.includes("successfully") ? "var(--royal-green)" : "#a33a2a", fontSize: "13px" }}>{feedback}</p>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
         {filtered.map(p => (
@@ -54,8 +91,15 @@ export default function BuyerSearch() {
                   <strong style={{ fontSize: "15px" }}>{formatPrice(p.price)}</strong>
                   <span style={{ color: "#9aa49f", fontSize: "11px", marginLeft: "4px" }}>/ {p.packaging.split(" ")[0]}{p.packaging.split(" ").slice(1).join(" ")}</span>
                 </div>
-                <button className="btn btn-primary btn-sm">Request</button>
+                <button className="btn btn-primary btn-sm" onClick={() => setRequestId(requestId === p.id ? null : p.id)}>Request</button>
               </div>
+              {requestId === p.id && (
+                <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0f2ed" }}>
+                  <input required min="0.01" max={p.quantity} step="0.01" type="number" value={requestForm.quantity} onChange={event => setRequestForm(current => ({ ...current, quantity: event.target.value }))} placeholder={`Quantity (max ${p.quantity})`} style={{ width: "100%", padding: "9px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "12px", marginBottom: "8px" }} />
+                  <input required type="text" value={requestForm.deliveryLocation} onChange={event => setRequestForm(current => ({ ...current, deliveryLocation: event.target.value }))} placeholder="Delivery location" style={{ width: "100%", padding: "9px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "12px", marginBottom: "8px" }} />
+                  <button className="btn btn-primary btn-sm" disabled={requesting || !requestForm.quantity || !requestForm.deliveryLocation} onClick={() => handleRequest(p)}>{requesting ? "Sending..." : "Send Request"}</button>
+                </div>
+              )}
             </div>
           </div>
         ))}

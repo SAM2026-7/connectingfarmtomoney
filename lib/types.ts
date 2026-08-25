@@ -1,5 +1,18 @@
 export type UserRole = 'farmer' | 'buyer' | 'agent' | 'exporter' | 'admin';
 
+export type VisitorUserClass = 'farmer' | 'buyer' | 'agent' | 'exporter' | 'admin';
+
+export interface VisitorRecord {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  role: VisitorUserClass;
+  visitDate: string;
+  createdAt: string;
+  device?: string;
+}
+
 export type VerificationLevel = 'unverified' | 'phone_verified' | 'identity_verified' | 'business_verified' | 'trade_verified' | 'trusted';
 
 export type ProduceStatus = 'draft' | 'active' | 'sold' | 'expired';

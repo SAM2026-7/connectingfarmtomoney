@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_ORDERS, MOCK_PRODUCE } from "@/lib/data";
 import { formatPrice, formatDate, getCommodityName } from "@/lib/data";
+import { Order, ProduceListing } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Payments() {
-  const paidOrders = MOCK_ORDERS.filter(o => ["paid", "processing", "dispatched", "delivered", "completed"].includes(o.status));
-  const escrowOrders = MOCK_ORDERS.filter(o => o.status === "payment_pending");
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  useEffect(() => { if (user) fetch("/api/catalog").then(response => response.ok ? response.json() : null).then(data => { const allOrders = data?.data?.orders ?? []; setOrders(user.role === "admin" ? allOrders : allOrders.filter((order: Order) => order.buyerId === user.id || order.sellerId === user.id)); setProduce(data?.data?.produce ?? []); }).catch(() => undefined); }, [user]);
+  const paidOrders = orders.filter(o => ["paid", "processing", "dispatched", "delivered", "completed"].includes(o.status));
+  const escrowOrders = orders.filter(o => o.status === "payment_pending");
 
   return (
     <DashboardLayout title="Payments & Escrow" subtitle="Manage transactions and escrow payments">
@@ -54,7 +60,7 @@ export default function Payments() {
               {escrowOrders.map(o => (
                 <tr key={o.id}>
                   <td className="commodity-name">{o.id}</td>
-                  <td>{getCommodityName(MOCK_PRODUCE.find(p => p.id === o.produceId)?.commodityId || "")}</td>
+                  <td>{getCommodityName(produce.find(p => p.id === o.produceId)?.commodityId || "")}</td>
                   <td>{formatPrice(o.price)}</td>
                   <td><span className="badge badge-yellow">Awaiting Delivery</span></td>
                   <td><button className="btn btn-primary btn-sm">Confirm Delivery</button></td>
@@ -86,7 +92,7 @@ export default function Payments() {
           {paidOrders.slice(0, 10).map(o => (
             <tr key={o.id}>
               <td className="commodity-name">{o.id}</td>
-              <td>{getCommodityName(MOCK_PRODUCE.find(p => p.id === o.produceId)?.commodityId || "")}</td>
+              <td>{getCommodityName(produce.find(p => p.id === o.produceId)?.commodityId || "")}</td>
               <td>{formatPrice(o.price)}</td>
               <td>Bank Transfer</td>
               <td><span className="badge badge-green">Paid</span></td>

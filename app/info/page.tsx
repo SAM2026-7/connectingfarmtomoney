@@ -3,11 +3,26 @@
 import DashboardLayout from "@/components/DashboardLayout";
 
 const NEWS = [
-  { title: "FG launches ₦500B agricultural transformation programme", date: "2026-08-24", category: "Policy" },
-  { title: "CBN approves new loans for smallholder farmers", date: "2026-08-22", category: "Finance" },
-  { title: "Nigeria signs new export deal with EU for sesame", date: "2026-08-20", category: "Export" },
-  { title: "Weather alert: Heavy rainfall expected in South-West", date: "2026-08-19", category: "Weather" },
-  { title: "New storage facility opens in Kaduna", date: "2026-08-18", category: "Infrastructure" },
+  { title: "Rainfall planning: protect harvested crops during wet-season showers", date: "2026-08-25", category: "Weather" },
+  { title: "Check official notices before applying for agricultural finance", date: "2026-08-25", category: "Finance" },
+  { title: "Exporters should confirm destination and phytosanitary requirements", date: "2026-08-25", category: "Export" },
+  { title: "Use local forecasts for planting, spraying, and transport decisions", date: "2026-08-25", category: "Advisory" },
+  { title: "Compare storage and aggregation options before harvest peaks", date: "2026-08-25", category: "Infrastructure" },
+];
+
+const WEATHER = [
+  { region: "South-West", outlook: "Wet-season showers", advice: "Improve drainage and keep harvested produce covered." },
+  { region: "South-East", outlook: "Cloudy with rain risk", advice: "Avoid field operations during storms and ventilate storage." },
+  { region: "North-Central", outlook: "Mixed showers", advice: "Monitor soil moisture and plan transport around rainfall." },
+  { region: "North-West", outlook: "Warm with isolated showers", advice: "Prioritise water access and inspect crops for heat stress." },
+  { region: "North-East", outlook: "Warm and seasonally variable", advice: "Use local forecasts before irrigation and harvest planning." },
+];
+
+const POLICY_UPDATES = [
+  { policy: "National Agricultural Growth Scheme – Agro-Pocket (NAGS-AP)", period: "2023–2025 programme cycle", impact: "Supports input access and production finance through participating channels.", action: "Confirm eligibility and active application windows with official programme contacts." },
+  { policy: "Presidential Accelerated Stabilisation and Advancement Plan (PASAP)", period: "2024 policy response", impact: "Includes measures intended to improve food production, supply, and affordability.", action: "Check current implementation notices before relying on a support measure." },
+  { policy: "National Livestock Transformation Plan (NLTP)", period: "Ongoing national framework", impact: "Focuses on livestock productivity, value chains, conflict reduction, and investment.", action: "Livestock users should confirm state-level programmes and extension contacts." },
+  { policy: "ACReSAL climate-resilience programme", period: "Ongoing multi-year programme", impact: "Supports climate-smart agriculture, watershed management, and resilient livelihoods.", action: "Look for participating state or community projects before registering interest." },
 ];
 
 const TRAINING = [
@@ -22,24 +37,10 @@ export default function InfoCentre() {
     <DashboardLayout title="Agricultural Information" subtitle="Market news, weather, and training resources">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", marginBottom: "40px" }}>
         <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: "10px", padding: "24px" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: "16px" }}>Weather Outlook</h3>
+          <h3 style={{ margin: "0 0 6px", fontSize: "16px" }}>Weather Outlook</h3>
+          <p style={{ margin: "0 0 16px", color: "#708077", fontSize: "11px" }}>Regional planning guidance · 25 Aug 2026</p>
           <div style={{ display: "grid", gap: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f0f2ed" }}>
-              <span style={{ color: "#708077", fontSize: "13px" }}>Lagos</span>
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>28°C / Rain</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f0f2ed" }}>
-              <span style={{ color: "#708077", fontSize: "13px" }}>Ibadan</span>
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>27°C / Cloudy</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f0f2ed" }}>
-              <span style={{ color: "#708077", fontSize: "13px" }}>Kano</span>
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>32°C / Sunny</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}>
-              <span style={{ color: "#708077", fontSize: "13px" }}>Enugu</span>
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>26°C / Light Rain</span>
-            </div>
+            {WEATHER.map((item, index) => <div key={item.region} style={{ padding: "10px 0", borderBottom: index < WEATHER.length - 1 ? "1px solid #f0f2ed" : "0" }}><div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}><span style={{ color: "#708077", fontSize: "13px" }}>{item.region}</span><span style={{ fontSize: "13px", fontWeight: 600, textAlign: "right" }}>{item.outlook}</span></div><div style={{ color: "#708077", fontSize: "11px", marginTop: "4px" }}>{item.advice}</div></div>)}
           </div>
         </div>
 
@@ -85,6 +86,18 @@ export default function InfoCentre() {
             </tr>
           ))}
         </tbody>
+      </table>
+
+      <div className="section-heading">
+        <div>
+          <span className="section-kicker">POLICY WATCH</span>
+          <h2>Recent Nigerian Agricultural Policies</h2>
+        </div>
+      </div>
+      <p style={{ color: "#708077", fontSize: "12px", margin: "-8px 0 16px" }}>Programme status and funding windows can change. Confirm details with the responsible ministry, agency, or state office.</p>
+      <table className="produce-table" style={{ marginBottom: "40px" }}>
+        <thead><tr><th>Policy / Programme</th><th>Period</th><th>What it means</th><th>Recommended action</th></tr></thead>
+        <tbody>{POLICY_UPDATES.map(item => <tr key={item.policy}><td className="commodity-name">{item.policy}</td><td><span className="badge badge-blue">{item.period}</span></td><td style={{ color: "#708077", fontSize: "12px" }}>{item.impact}</td><td style={{ color: "#708077", fontSize: "12px" }}>{item.action}</td></tr>)}</tbody>
       </table>
 
       <div className="section-heading">

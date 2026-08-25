@@ -1,12 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, UserRole } from "@/lib/types";
 
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
-  login: (role: UserRole) => void;
+  login: (role: UserRole) => Promise<void>;
   logout: () => void;
 }
 
@@ -16,19 +16,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
 
-  const login = (selectedRole: UserRole) => {
-    const mockUsers: Record<UserRole, User> = {
-      farmer: { id: "current-farmer", role: "farmer", name: "Adebayo Ogundimu", email: "adebayo@farm.com", phone: "+234 803 123 4567", state: "Oyo", lga: "Iseyin", verificationLevel: "trade_verified", rating: 4.8, joinedDate: "2025-03-15" },
-      buyer: { id: "current-buyer", role: "buyer", name: "Lagos Foods & Beverages", email: "procurement@lagosfoods.ng", phone: "+234 901 111 2222", state: "Lagos", lga: "Apapa", verificationLevel: "business_verified", rating: 4.8, joinedDate: "2024-12-01" },
-      agent: { id: "current-agent", role: "agent", name: "Lagos Agro Services Ltd", email: "info@lagosagro.ng", phone: "+234 801 111 2222", state: "Lagos", lga: "Lagos Mainland", verificationLevel: "trusted", rating: 4.7, joinedDate: "2024-09-01" },
-      exporter: { id: "current-exporter", role: "exporter", name: "West Africa Export Ltd", email: "exports@wael.ng", phone: "+234 904 111 2222", state: "Lagos", lga: "Lagos Island", verificationLevel: "trusted", rating: 4.9, joinedDate: "2024-08-20" },
-      admin: { id: "current-admin", role: "admin", name: "Admin User", email: "admin@farmtomoney.ng", phone: "+234 900 000 0000", state: "Lagos", lga: "Lagos Island", verificationLevel: "trusted", rating: 5.0, joinedDate: "2024-01-01" },
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data?.user) {
+          setUser(data.user);
+          setRole(data.user.role);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const login = async (selectedRole: UserRole) => {
+    const demoEmails: Record<UserRole, string> = {
+      farmer: "adebayo@farm.com",
+      buyer: "procurement@lagosfoods.ng",
+      agent: "info@lagosagro.ng",
+      exporter: "exports@wael.ng",
+      admin: "admin@farmtomoney.ng",
     };
-    setUser(mockUsers[selectedRole]);
-    setRole(selectedRole);
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: demoEmails[selectedRole] }),
+    });
+    if (!response.ok) throw new Error("Login failed");
+    const data = await response.json();
+    setUser(data.user);
+    setRole(data.user.role);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     setRole(null);
   };

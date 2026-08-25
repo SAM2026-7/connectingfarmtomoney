@@ -1,38 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_MESSAGES, MOCK_FARMERS, MOCK_BUYERS, MOCK_AGENTS } from "@/lib/data";
 import { useAuth } from "@/components/AuthProvider";
+import { Message, User } from "@/lib/types";
 
 export default function Messages() {
   const { user } = useAuth();
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("chat");
+  });
   const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [contacts, setContacts] = useState<Pick<User, "id" | "name" | "role" | "state">[]>([]);
+  const [feedback, setFeedback] = useState("");
 
-  const conversations = MOCK_MESSAGES.filter(m => m.senderId === user?.id || m.receiverId === user?.id);
-  const chatPartner = (msg: typeof MOCK_MESSAGES[0]) => {
+  const loadMessages = useCallback(() => {
+    if (!user) return;
+    Promise.all([fetch(`/api/messages?userId=${encodeURIComponent(user.id)}`), fetch("/api/users")])
+      .then(async ([messageResponse, contactResponse]) => {
+        const messageData = messageResponse.ok ? await messageResponse.json() : { data: [] };
+        const contactData = contactResponse.ok ? await contactResponse.json() : { data: [] };
+        setMessages(messageData.data ?? []);
+        setContacts(contactData.data ?? []);
+      })
+      .catch(() => { setMessages([]); setContacts([]); });
+  }, [user]);
+
+  useEffect(() => {
+    loadMessages();
+    const onFocus = () => loadMessages();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadMessages]);
+
+  const conversations = messages.filter(m => m.senderId === user?.id || m.receiverId === user?.id);
+  const chatPartner = (msg: Message) => {
     if (msg.senderId === user?.id) return msg.receiverId;
     return msg.senderId;
   };
 
   const chatMessages = activeChat
-    ? MOCK_MESSAGES.filter(m => (m.senderId === user?.id && m.receiverId === activeChat) || (m.receiverId === user?.id && m.senderId === activeChat))
+    ? messages.filter(m => (m.senderId === user?.id && m.receiverId === activeChat) || (m.receiverId === user?.id && m.senderId === activeChat))
     : [];
 
   const getPartnerName = (id: string) => {
-    const all = [...MOCK_FARMERS, ...MOCK_BUYERS, ...MOCK_AGENTS];
-    const partner = all.find(u => u.id === id);
+    const partner = contacts.find(user => user.id === id);
     return partner?.name || id;
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!message.trim()) return;
+    if (!activeChat) return;
+    setFeedback("");
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ senderId: user?.id, receiverId: activeChat, content: message }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setMessages(current => [...current, data.data]);
+      setFeedback("Message sent successfully.");
+    } else {
+      const data = await response.json();
+      setFeedback(data.error || "Unable to send message.");
+    }
     setMessage("");
   };
 
   return (
     <DashboardLayout title="Messages" subtitle="Communicate with buyers, sellers, and agents">
+    {user && ["farmer", "buyer"].includes(user.role) && <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "center" }}><label htmlFor="new-contact" style={{ fontSize: "13px", fontWeight: 600 }}>New conversation</label><select id="new-contact" value={activeChat ?? ""} onChange={event => setActiveChat(event.target.value || null)} style={{ padding: "9px 12px", border: "1px solid var(--line)", borderRadius: "6px", minWidth: "240px" }}><option value="">Select a contact to message</option>{contacts.map(contact => <option key={contact.id} value={contact.id}>{contact.name} ({contact.role})</option>)}</select></div>}
+    {feedback && <p role="alert" style={{ color: feedback.includes("successfully") ? "var(--royal-green)" : "#a33a2a", fontSize: "13px" }}>{feedback}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "20px", height: "calc(100vh - 220px)", minHeight: "400px" }}>
         <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: "10px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px", borderBottom: "1px solid var(--line)", fontWeight: 600, fontSize: "14px" }}>Conversations</div>

@@ -11,6 +11,20 @@ const DISPUTES = [
 
 export default function Disputes() {
   const [showForm, setShowForm] = useState(false);
+  const [disputes, setDisputes] = useState(DISPUTES);
+  const [form, setForm] = useState({ orderId: "", type: "Quality Issue", description: "" });
+  const [feedback, setFeedback] = useState("");
+
+  const submitDispute = () => {
+    if (!form.orderId.trim() || !form.description.trim()) {
+      setFeedback("Order ID and description are required.");
+      return;
+    }
+    setDisputes(current => [{ id: `DSP-${String(current.length + 1).padStart(3, "0")}`, orderId: form.orderId.trim(), type: form.type, description: form.description.trim(), status: "open", date: new Date().toISOString().split("T")[0] }, ...current]);
+    setForm({ orderId: "", type: "Quality Issue", description: "" });
+    setShowForm(false);
+    setFeedback("Dispute submitted successfully.");
+  };
 
   return (
     <DashboardLayout title="Dispute Resolution" subtitle="Report and resolve transaction issues">
@@ -46,11 +60,11 @@ export default function Disputes() {
           <div style={{ display: "grid", gap: "16px" }}>
             <div>
               <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#708077", marginBottom: "6px" }}>Order ID</label>
-              <input type="text" placeholder="e.g. AGN-2026-000150" style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px" }} />
+              <input value={form.orderId} onChange={event => setForm(current => ({ ...current, orderId: event.target.value }))} type="text" placeholder="e.g. AGN-2026-000150" style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#708077", marginBottom: "6px" }}>Dispute Type</label>
-              <select style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px" }}>
+              <select value={form.type} onChange={event => setForm(current => ({ ...current, type: event.target.value }))} style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px" }}>
                 <option>Quality Issue</option>
                 <option>Wrong Quantity</option>
                 <option>Non-delivery</option>
@@ -61,12 +75,13 @@ export default function Disputes() {
             </div>
             <div>
               <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#708077", marginBottom: "6px" }}>Description</label>
-              <textarea rows={4} placeholder="Describe the issue in detail..." style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px", resize: "vertical" }} />
+              <textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} rows={4} placeholder="Describe the issue in detail..." style={{ width: "100%", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px", fontSize: "13px", resize: "vertical" }} />
             </div>
             <div style={{ display: "flex", gap: "12px" }}>
-              <button className="btn btn-primary">Submit Dispute</button>
+              <button className="btn btn-primary" onClick={submitDispute}>Submit Dispute</button>
               <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
+            {feedback && <p role="status" style={{ margin: 0, color: feedback.includes("successfully") ? "var(--royal-green)" : "#a33a2a" }}>{feedback}</p>}
           </div>
         </div>
       )}
@@ -90,7 +105,7 @@ export default function Disputes() {
           </tr>
         </thead>
         <tbody>
-          {DISPUTES.map(d => (
+          {disputes.map(d => (
             <tr key={d.id}>
               <td className="commodity-name">{d.id}</td>
               <td>{d.orderId}</td>

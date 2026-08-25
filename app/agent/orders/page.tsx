@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_ORDERS, MOCK_PRODUCE } from "@/lib/data";
 import { formatPrice, formatDate, getCommodityName } from "@/lib/data";
+import { Order, ProduceListing } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function AgentOrders() {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  useEffect(() => { if (user) fetch("/api/catalog").then(response => response.ok ? response.json() : null).then(data => { const catalog = data?.data; setOrders((catalog?.orders ?? []).filter((order: Order) => order.sellerId === user.id)); setProduce(catalog?.produce ?? []); }).catch(() => undefined); }, [user]);
   return (
     <DashboardLayout title="My Orders" subtitle="Track orders from your aggregated produce">
       <table className="produce-table">
@@ -21,10 +27,10 @@ export default function AgentOrders() {
           </tr>
         </thead>
         <tbody>
-          {MOCK_ORDERS.map(o => (
+          {orders.map(o => (
             <tr key={o.id}>
               <td className="commodity-name">{o.id}</td>
-              <td>{getCommodityName(MOCK_PRODUCE.find(p => p.id === o.produceId)?.commodityId || "")}</td>
+              <td>{getCommodityName(produce.find(p => p.id === o.produceId)?.commodityId || "")}</td>
               <td>Buyer #{o.buyerId}</td>
               <td>{o.quantity.toLocaleString()}</td>
               <td>{formatPrice(o.price)}</td>

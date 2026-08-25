@@ -1,12 +1,26 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import { MOCK_PRODUCE, MOCK_ORDERS, MOCK_FARMERS, MOCK_AGENTS, MOCK_BUYERS, MOCK_EXPORTERS } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
+import { Order, ProduceListing, User } from "@/lib/types";
 
 export default function AdminDashboard() {
-  const totalUsers = MOCK_FARMERS.length + MOCK_AGENTS.length + MOCK_BUYERS.length + MOCK_EXPORTERS.length;
-  const totalValue = MOCK_ORDERS.reduce((sum, o) => sum + o.price, 0);
+  const [users, setUsers] = useState<User[]>([]);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/summary")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        setUsers(data?.data?.users ?? []);
+        setProduce(data?.data?.produce ?? []);
+        setOrders(data?.data?.orders ?? []);
+      })
+      .catch(() => { setUsers([]); setProduce([]); setOrders([]); });
+  }, []);
+  const totalUsers = users.length;
+  const totalValue = orders.reduce((sum, order) => sum + order.price, 0);
   const topCommodities = ["Maize", "Cassava", "Sesame", "Rice", "Yam", "Ginger", "Cocoa", "Soybean"];
 
   return (
@@ -32,11 +46,11 @@ export default function AdminDashboard() {
             </div>
             <div className="stat-card">
               <div className="stat-label">Active Listings</div>
-              <div className="stat-value">{MOCK_PRODUCE.filter(p => p.status === "active").length}</div>
+              <div className="stat-value">{produce.filter(p => p.status === "active").length}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Total Orders</div>
-              <div className="stat-value">{MOCK_ORDERS.length}</div>
+              <div className="stat-value">{orders.length}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Platform Revenue</div>
@@ -62,27 +76,27 @@ export default function AdminDashboard() {
             <tbody>
               <tr>
                 <td className="commodity-name">Farmers</td>
-                <td>{MOCK_FARMERS.length}</td>
-                <td>{MOCK_FARMERS.filter(f => f.verificationLevel !== "unverified").length}</td>
-                <td>{(MOCK_FARMERS.reduce((s, f) => s + (f.rating || 0), 0) / MOCK_FARMERS.length).toFixed(1)}</td>
+                <td>{users.filter(user => user.role === "farmer").length}</td>
+                <td>{users.filter(user => user.role === "farmer" && user.verificationLevel !== "unverified").length}</td>
+                <td>{(users.filter(user => user.role === "farmer").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(users.filter(user => user.role === "farmer").length, 1)).toFixed(1)}</td>
               </tr>
               <tr>
                 <td className="commodity-name">Agents</td>
-                <td>{MOCK_AGENTS.length}</td>
-                <td>{MOCK_AGENTS.filter(a => a.verificationLevel !== "unverified").length}</td>
-                <td>{(MOCK_AGENTS.reduce((s, a) => s + (a.rating || 0), 0) / MOCK_AGENTS.length).toFixed(1)}</td>
+                <td>{users.filter(user => user.role === "agent").length}</td>
+                <td>{users.filter(user => user.role === "agent" && user.verificationLevel !== "unverified").length}</td>
+                <td>{(users.filter(user => user.role === "agent").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(users.filter(user => user.role === "agent").length, 1)).toFixed(1)}</td>
               </tr>
               <tr>
                 <td className="commodity-name">Buyers</td>
-                <td>{MOCK_BUYERS.length}</td>
-                <td>{MOCK_BUYERS.filter(b => b.verificationLevel !== "unverified").length}</td>
-                <td>{(MOCK_BUYERS.reduce((s, b) => s + (b.rating || 0), 0) / MOCK_BUYERS.length).toFixed(1)}</td>
+                <td>{users.filter(user => user.role === "buyer").length}</td>
+                <td>{users.filter(user => user.role === "buyer" && user.verificationLevel !== "unverified").length}</td>
+                <td>{(users.filter(user => user.role === "buyer").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(users.filter(user => user.role === "buyer").length, 1)).toFixed(1)}</td>
               </tr>
               <tr>
                 <td className="commodity-name">Exporters</td>
-                <td>{MOCK_EXPORTERS.length}</td>
-                <td>{MOCK_EXPORTERS.filter(e => e.verificationLevel !== "unverified").length}</td>
-                <td>{(MOCK_EXPORTERS.reduce((s, e) => s + (e.rating || 0), 0) / MOCK_EXPORTERS.length).toFixed(1)}</td>
+                <td>{users.filter(user => user.role === "exporter").length}</td>
+                <td>{users.filter(user => user.role === "exporter" && user.verificationLevel !== "unverified").length}</td>
+                <td>{(users.filter(user => user.role === "exporter").reduce((sum, user) => sum + (user.rating || 0), 0) / Math.max(users.filter(user => user.role === "exporter").length, 1)).toFixed(1)}</td>
               </tr>
             </tbody>
           </table>

@@ -1,21 +1,37 @@
 "use client";
 
 import { useAuth } from "@/components/AuthProvider";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
-import { MOCK_PRODUCE, MOCK_ORDERS } from "@/lib/data";
+import { useRouter } from "next/navigation";
 import { formatPrice, formatDate, getCommodityName } from "@/lib/data";
+import { ProduceListing, Order } from "@/lib/types";
 
 export default function FarmerDashboard() {
   const { user } = useAuth();
-  const myProduce = MOCK_PRODUCE.filter(p => p.sellerId === user?.id);
-  const myOrders = MOCK_ORDERS.filter(o => o.sellerId === user?.id);
+  const router = useRouter();
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([fetch("/api/produce"), fetch("/api/orders")])
+      .then(async ([produceResponse, orderResponse]) => {
+        const produceData = produceResponse.ok ? await produceResponse.json() : { data: [] };
+        const orderData = orderResponse.ok ? await orderResponse.json() : { data: [] };
+        setProduce(produceData.data ?? []);
+        setOrders(orderData.data ?? []);
+      })
+      .catch(() => { setProduce([]); setOrders([]); });
+  }, [user]);
+  const myProduce = produce.filter(p => p.sellerId === user?.id);
+  const myOrders = orders.filter(o => o.sellerId === user?.id);
   const activeListings = myProduce.filter(p => p.status === "active").length;
   const pendingOrders = myOrders.filter(o => ["requested", "negotiating", "payment_pending"].includes(o.status)).length;
   const revenue = myOrders.filter(o => o.status === "completed" || o.status === "delivered").reduce((sum, o) => sum + o.price, 0);
 
   return (
-    <div className="dashboard-wrap">
+    <div className="dashboard-wrap farmer-dashboard">
       <Sidebar />
       <div className="dashboard-content">
         <header className="topbar">
@@ -96,6 +112,7 @@ export default function FarmerDashboard() {
                 <th>Qty</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th>Contact</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -103,15 +120,16 @@ export default function FarmerDashboard() {
               {myOrders.slice(0, 5).map(o => (
                 <tr key={o.id}>
                   <td className="commodity-name">{o.id}</td>
-                  <td>{getCommodityName(MOCK_PRODUCE.find(p => p.id === o.produceId)?.commodityId || "")}</td>
+                  <td>{getCommodityName(produce.find(p => p.id === o.produceId)?.commodityId || "")}</td>
                   <td>{o.quantity.toLocaleString()}</td>
                   <td>{formatPrice(o.price)}</td>
                   <td><span className={`badge ${o.status === "completed" || o.status === "delivered" ? "badge-green" : o.status === "cancelled" ? "badge-red" : "badge-yellow"}`}>{o.status.replace("_", " ")}</span></td>
+                  <td><button className="btn btn-outline btn-sm" onClick={() => router.push(`/messages?chat=${o.buyerId}`)}>Message</button></td>
                   <td>{formatDate(o.createdAt)}</td>
                 </tr>
               ))}
               {myOrders.length === 0 && (
-                <tr><td colSpan={6} style={{ textAlign: "center", color: "#708077" }}>No orders yet.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", color: "#708077" }}>No orders yet.</td></tr>
               )}
             </tbody>
           </table>

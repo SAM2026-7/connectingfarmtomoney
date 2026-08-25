@@ -1,10 +1,17 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { MOCK_AGGREGATIONS, MOCK_PRODUCE, MOCK_FARMERS } from "@/lib/data";
 import { formatDate, getCommodityName } from "@/lib/data";
+import { useEffect, useState } from "react";
+import type { AgentAggregation, ProduceListing, User } from "@/lib/types";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function AgentAggregation() {
+  const { user } = useAuth();
+  const [aggregations, setAggregations] = useState<AgentAggregation[]>([]);
+  const [produce, setProduce] = useState<ProduceListing[]>([]);
+  const [farmers, setFarmers] = useState<User[]>([]);
+  useEffect(() => { if (user) fetch("/api/catalog").then(response => response.ok ? response.json() : null).then(data => { const catalog = data?.data; setAggregations((catalog?.aggregations ?? []).filter((item: AgentAggregation) => item.agentId === user.id)); setProduce(catalog?.produce ?? []); setFarmers((catalog?.users ?? []).filter((candidate: User) => candidate.role === "farmer")); }).catch(() => undefined); }, [user]);
   return (
     <DashboardLayout title="Aggregation" subtitle="Manage aggregated produce from connected farmers">
       <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: "10px", padding: "24px", marginBottom: "30px" }}>
@@ -12,15 +19,15 @@ export default function AgentAggregation() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "20px" }}>
           <div>
             <div style={{ color: "#708077", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Total Farmers</div>
-            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>3</div>
+            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>{new Set(aggregations.map(item => item.farmerId)).size}</div>
           </div>
           <div>
             <div style={{ color: "#708077", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Total Volume</div>
-            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>470t</div>
+            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>{aggregations.reduce((sum, item) => sum + item.quantity, 0)}t</div>
           </div>
           <div>
             <div style={{ color: "#708077", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Active Lots</div>
-            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>{MOCK_AGGREGATIONS.length}</div>
+            <div style={{ fontSize: "28px", fontFamily: "'Playfair Display', serif", marginTop: "4px" }}>{aggregations.length}</div>
           </div>
           <div>
             <div style={{ color: "#708077", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>Est. Value</div>
@@ -38,9 +45,9 @@ export default function AgentAggregation() {
       </div>
 
       <div style={{ display: "grid", gap: "16px" }}>
-        {MOCK_AGGREGATIONS.map((agg, i) => {
-          const farmer = MOCK_FARMERS.find(f => f.id === agg.farmerId);
-          const produce = MOCK_PRODUCE.find(p => p.id === agg.produceId);
+        {aggregations.map((agg, i) => {
+          const farmer = farmers.find(candidate => candidate.id === agg.farmerId);
+          const produceItem = produce.find(item => item.id === agg.produceId);
           return (
             <div key={i} style={{ background: "white", border: "1px solid var(--line)", borderRadius: "10px", padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -49,7 +56,7 @@ export default function AgentAggregation() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: "15px" }}>{farmer?.name}</div>
-                  <div style={{ color: "#708077", fontSize: "12px" }}>{produce ? getCommodityName(produce.commodityId) : "N/A"} - {agg.quantity.toLocaleString()} tonnes</div>
+                  <div style={{ color: "#708077", fontSize: "12px" }}>{produceItem ? getCommodityName(produceItem.commodityId) : "N/A"} - {agg.quantity.toLocaleString()} tonnes</div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
