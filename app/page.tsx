@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/AuthProvider";
 import VisitorLoginForm from "@/components/VisitorLoginForm";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserRole } from "@/lib/types";
@@ -89,6 +90,11 @@ export default function Home() {
               Connect farmers, agents, buyers, and exporters in one trusted marketplace.
               Verified suppliers, fair prices, secure transactions.
             </p>
+
+            <div className={`marketplace-quick-links ${isVisible ? "visible" : ""}`}>
+              <Link href="/market" className="quick-link-btn">Browse Marketplace</Link>
+              <Link href="/wanted" className="quick-link-btn">Buyer Requests</Link>
+            </div>
 
             <div className={`stats-bar ${isVisible ? "visible" : ""}`}>
               <div className="stat-item">

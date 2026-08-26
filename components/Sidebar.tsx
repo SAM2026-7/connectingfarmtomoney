@@ -9,6 +9,8 @@ const NAV_ITEMS: Record<UserRole, { href: string; label: string; icon: string }[
   farmer: [
     { href: "/farmer/dashboard", label: "Dashboard", icon: "⌂" },
     { href: "/farmer/produce", label: "My Produce", icon: "♧" },
+    { href: "/market", label: "Marketplace", icon: "⌕" },
+    { href: "/wanted", label: "Buyer Requests", icon: "📝" },
     { href: "/farmer/orders", label: "Orders", icon: "↗" },
     { href: "/payments", label: "Payments", icon: "⬡" },
     { href: "/logistics", label: "Logistics", icon: "⛟" },
@@ -21,6 +23,8 @@ const NAV_ITEMS: Record<UserRole, { href: string; label: string; icon: string }[
   buyer: [
     { href: "/buyer/dashboard", label: "Dashboard", icon: "⌂" },
     { href: "/buyer/search", label: "Find Produce", icon: "⌕" },
+    { href: "/market", label: "Marketplace", icon: "⌕" },
+    { href: "/wanted", label: "Buyer Requests", icon: "📝" },
     { href: "/buyer/orders", label: "My Orders", icon: "↗" },
     { href: "/payments", label: "Payments", icon: "⬡" },
     { href: "/logistics", label: "Logistics", icon: "⛟" },
@@ -34,6 +38,8 @@ const NAV_ITEMS: Record<UserRole, { href: string; label: string; icon: string }[
     { href: "/agent/farmers", label: "Farmers", icon: "♧" },
     { href: "/agent/aggregation", label: "Aggregation", icon: "◈" },
     { href: "/buyer/search", label: "Produce", icon: "⌕" },
+    { href: "/market", label: "Marketplace", icon: "⌕" },
+    { href: "/wanted", label: "Buyer Requests", icon: "📝" },
     { href: "/agent/orders", label: "Orders", icon: "↗" },
     { href: "/payments", label: "Payments", icon: "⬡" },
     { href: "/logistics", label: "Logistics", icon: "⛟" },
@@ -44,6 +50,8 @@ const NAV_ITEMS: Record<UserRole, { href: string; label: string; icon: string }[
   exporter: [
     { href: "/exporter/dashboard", label: "Dashboard", icon: "⌂" },
     { href: "/buyer/search", label: "Find Produce", icon: "⌕" },
+    { href: "/market", label: "Marketplace", icon: "⌕" },
+    { href: "/wanted", label: "Buyer Requests", icon: "📝" },
     { href: "/exporter/requests", label: "Export Requests", icon: "✈" },
     { href: "/payments", label: "Payments", icon: "⬡" },
     { href: "/logistics", label: "Logistics", icon: "⛟" },

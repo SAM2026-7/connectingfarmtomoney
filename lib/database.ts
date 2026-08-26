@@ -1,8 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { MOCK_MESSAGES, MOCK_ORDERS, MOCK_PRICES, MOCK_PRODUCE, MOCK_AGGREGATIONS, MOCK_FARMERS, MOCK_BUYERS, MOCK_AGENTS, MOCK_EXPORTERS } from "@/lib/data";
-import { Message, Order, PriceData, ProduceListing, User, VisitorRecord } from "@/lib/types";
+import { MOCK_AGGREGATIONS, MOCK_FARMERS, MOCK_BUYERS, MOCK_AGENTS, MOCK_EXPORTERS, MOCK_MESSAGES, MOCK_ORDERS, MOCK_PRICES, MOCK_PRODUCE, MOCK_WANTED_REQUESTS, MOCK_REVIEWS } from "@/lib/data";
+import { Message, Order, PriceData, ProduceListing, User, VisitorRecord, WantedRequest, Review } from "@/lib/types";
 
 const dataDirectory = join(process.cwd(), "data");
 mkdirSync(dataDirectory, { recursive: true });
@@ -14,8 +14,10 @@ database.exec(`
   CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY AUTOINCREMENT, payload TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS aggregations (id INTEGER PRIMARY KEY AUTOINCREMENT, payload TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS visitors (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS aggregations (id INTEGER PRIMARY KEY AUTOINCREMENT, payload TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS visitors (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS wanted (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+   CREATE TABLE IF NOT EXISTS reviews (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
 `);
 
 function count(table: string) {
@@ -33,6 +35,8 @@ function seed() {
   if (count("messages") === 0) insertPayloads("messages", MOCK_MESSAGES);
   if (count("prices") === 0) insertPayloads("prices", MOCK_PRICES);
   if (count("aggregations") === 0) insertPayloads("aggregations", MOCK_AGGREGATIONS);
+  if (count("wanted") === 0) insertPayloads("wanted", MOCK_WANTED_REQUESTS);
+  if (count("reviews") === 0) insertPayloads("reviews", MOCK_REVIEWS);
 }
 
 function insertPayloads(table: string, records: unknown[]) {
@@ -65,3 +69,10 @@ export function updateProduce(produce: ProduceListing) { database.prepare("UPDAT
 
 export function getVisitors() { return payloads<VisitorRecord>("visitors"); }
 export function addVisitor(visitor: VisitorRecord) { database.prepare("INSERT INTO visitors VALUES (?, ?)").run(visitor.id, JSON.stringify(visitor)); }
+
+export function getWantedRequests() { return payloads<WantedRequest>("wanted"); }
+export function addWantedRequest(request: WantedRequest) { database.prepare("INSERT INTO wanted VALUES (?, ?)").run(request.id, JSON.stringify(request)); }
+export function updateWantedRequest(request: WantedRequest) { database.prepare("UPDATE wanted SET payload = ? WHERE id = ?").run(JSON.stringify(request), request.id); }
+
+export function getReviews() { return payloads<Review>("reviews"); }
+export function addReview(review: Review) { database.prepare("INSERT INTO reviews VALUES (?, ?)").run(review.id, JSON.stringify(review)); }

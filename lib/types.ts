@@ -114,3 +114,52 @@ export interface AgentAggregation {
   grade: QualityGrade;
   date: string;
 }
+
+export type WantedStatus = "open" | "matched" | "closed";
+
+export type DeliveryMethod = "pickup" | "delivery" | "courier" | "any";
+
+export interface WantedRequest {
+  id: string;
+  requesterId: string;
+  requesterRole: UserRole;
+  commodityId: string;
+  variety?: string;
+  quantity: number;
+  unit: string;
+  budget?: number;
+  budgetCurrency: string;
+  negotiable: boolean;
+  location: string;
+  state: string;
+  deliveryMethod: DeliveryMethod;
+  notes: string;
+  status: WantedStatus;
+  createdAt: string;
+  photos: string[];
+}
+
+export interface Review {
+  id: string;
+  orderId: string;
+  reviewerId: string;
+  revieweeId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface SellerProfile {
+  id: string;
+  role: UserRole;
+  name: string;
+  description: string;
+  avatar?: string;
+  verificationLevel: VerificationLevel;
+  rating: number;
+  state: string;
+  lga: string;
+  joinedDate: string;
+  produceCount: number;
+  tags: string[];
+}
